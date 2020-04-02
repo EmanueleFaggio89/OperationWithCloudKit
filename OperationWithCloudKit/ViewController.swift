@@ -10,11 +10,13 @@ import UIKit
 import CloudKit
 import Foundation
 
+var titles = [String]()
+var recordIDs = [CKRecord.ID]()
+
 
 class ViewController: UIViewController {
     
-    var titles = [String]()
-    var recordIDs = [CKRecord.ID]()
+    
     var privateDatabase =  CKContainer.default().privateCloudDatabase
     
     @IBOutlet weak var TextField: UITextField!
@@ -28,13 +30,13 @@ class ViewController: UIViewController {
     
     @IBAction func saveBtn(_ sender: Any) {
         let title = TextField.text!
-        let record = CKRecord(recordType: "RecordName")
+        let record = CKRecord(recordType: "Strings")
         
         record.setValue(title, forKey: "title")
         
         privateDatabase.save(record) { (savedRecord, error) in
             if error == nil { print("Record saved")  }
-            else { print("Record not saved.. \(error?.localizedDescription)") }
+            else { print("Record not saved.. \(String(describing: error?.localizedDescription))") }
         }
     }
     
@@ -54,16 +56,16 @@ class ViewController: UIViewController {
         recordIDs.removeAll()
         
         operation.recordFetchedBlock = { record in
-            self.titles.append(record["title"]!)
-            self.recordIDs.append(record.recordID)
+            titles.append(record["title"]!)
+            recordIDs.append(record.recordID)
         }
         
         operation.queryCompletionBlock = { cursor, error in
             
             DispatchQueue.main.async {
                 
-                print("Titles: \(self.titles)\n")
-                print("RecordIDs: \(self.recordIDs)\n")
+                print("Titles: \(titles)\n")
+                print("RecordIDs: \(recordIDs)\n")
             }
             
             
@@ -74,8 +76,38 @@ class ViewController: UIViewController {
     
     
     @IBAction func deleteBtn(_ sender: Any) {
+        let recordID = recordIDs.first! // record ceh voglio eliminare
+        
+        privateDatabase.delete(withRecordID: recordID) { (deleteRecordId,error) in
+            if error == nil { print("Record deleted") }
+            else { print("Record doesnt deleted.. \(String(describing: error?.localizedDescription))")}
+        }
+        
     }
+    
+    
+    
+    
+    
     @IBAction func updateBtn(_ sender: Any) {
+        
+        let newTitle = "New Title"
+        let recordId = recordIDs.first!
+        
+        privateDatabase.fetch(withRecordID: recordId) { (record,error)  in
+            if error == nil {
+                record?.setValue(newTitle, forKey: "title")
+                self.privateDatabase.save(record!, completionHandler: { (newRecord, error) in
+                    if error == nil { print("Record Upload")}
+                    else { print("error..\(String(describing: error?.localizedDescription))")}
+                })
+                
+            }
+            
+        }
+        
+        
+        
     }
     
 }
